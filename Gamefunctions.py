@@ -208,23 +208,31 @@ if __name__ == "__main__":
 
 inventory = ['bow', 'shield']
 def add_item(item: str, inventory: list):
-    Return None
+    """
+    adds an item
+    """
     
     inventory.append(item)
     
 def remove_item(item: str, inventory: list):
-    Return None
+    """
+    removes an item
+    """
+
     if item in inventory:
         inventory.remove(item)
 def display_inventory(inventory:list):
-    Return None
+    """
+    Displays the player's inventory.
+    """
+    print(f"Inventory: {', '.join(inventory) if inventory else 'Empty'}")
 
 print(f"Inventory: {inventory}")
 
 add_item('spear', inventory)
-print("After adding spear:")
+print("\nAfter adding spear:")
 display_inventory(inventory)
 
 remove_item('bow', inventory)
-print("After removing bow:")
+print("\nAfter removing bow:")
 display_inventory(inventory)
