@@ -59,6 +59,16 @@ def fight_monster(player_hp, player_gold):
     
     return player_hp, player_gold
 
+print(f"Inventory: {inventory}")
+
+gamefunctions.add_item('spear', inventory)
+print("\nAfter adding spear:")
+gamefunctions.display_inventory(inventory)
+
+gamefunctions.remove_item('bow', inventory)
+print("\nAfter removing bow:")
+gamefunctions.display_inventory(inventory)
+
 def main():
     player_hp = 30
     player_gold = 10

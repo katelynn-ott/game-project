@@ -227,12 +227,31 @@ def display_inventory(inventory:list):
     """
     print(f"Inventory: {', '.join(inventory) if inventory else 'Empty'}")
 
-print(f"Inventory: {inventory}")
 
-add_item('spear', inventory)
-print("\nAfter adding spear:")
-display_inventory(inventory)
+shop_items = {
+    "Sword": {"price": 10, "type": "weapon", "power": 15},
+    "Mystical Amulet": {"price": 25, "type": "special", "effect": "auto-defeat"},
+    "Potion": {"price": 5, "type": "consumable", "heal": 20}
+}
 
-remove_item('bow', inventory)
-print("\nAfter removing bow:")
-display_inventory(inventory)
+def buy_item(item_name: str, player_gold: int, inventory: list):
+    if item_name in shop_items:
+        item = shop_items[item_name]
+        if player_gold >= item["price"]:
+            inventory.append(item_name)
+            return player_gold - item["price"], f"You purchased {item_name}!"
+        else:
+            return player_gold, "Not enough gold!"
+    return player_gold, "Item not found!"
+
+def equip_weapon(inventory: list):
+    for item in inventory:
+        if item in shop_items and shop_items[item]["type"] == "weapon":
+            return item, f"You equipped {item}!"
+    return None, "No weapon in inventory!"
+
+def use_special_item(inventory: list):
+    if "Mystical Amulet" in inventory:
+        inventory.remove("Mystical Amulet")
+        return True, "The mystical amulet glows and defeats the monster instantly!"
+    return False, "You don't have a special item!"
