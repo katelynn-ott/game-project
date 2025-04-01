@@ -44,36 +44,6 @@ def print_welcome(name: str, width: int = 20):
     message = f"Hello, {name}!"
     print(message.center(width))
 
-def print_shop_menu(item1Name: str, item1Price: float, item2Name: str, item2Price: float):
-    """
-    Prints a shop menu with two items, aligning item names to the left and prices to the right.
-
-    Parameters:
-        Item1 (str): Name of first item
-        Item1Price (float): Price of first item
-        Item2 (str): Name of second item
-        Item2Price (float): Price of second item   
-
-    Returns:
-        None
-
-    Example:
-        print_shop_menu("Sword", 10.99, "Shield", 5.49)
-        /----------------------\
-        | Sword         $ 10.99 |
-        | Shield        $  5.49 |
-        \----------------------/
-    """
-    item1 = f"| {item1Name:<12} ${item1Price:>7.2f} |"
-    item2 = f"| {item2Name:<12} ${item2Price:>7.2f} |"
-    print("/-----------------------\\")  
-    print(item1)
-    print(item2)
-    print("\\-----------------------/")
-    
-print_shop_menu("Apple", .45, "Milk", .777)
-print_shop_menu("Chicken Leg", 7.22 , "Stew", 6.88)
-
 
     
 
@@ -128,6 +98,16 @@ def get_random_monster():
         power_range = (50, 200)
         money_range = (10, 90)
     return name, description, health_range, power_range, money_range
+
+def print_shop_menu(item1Name: str, item1Price: float, item2Name: str, item2Price: float):
+    
+    item1 = f"| {item1Name:<12} ${item1Price:>7.2f} |"
+    item2 = f"| {item2Name:<12} ${item2Price:>7.2f} |"
+    print("/-----------------------\\")  
+    print(item1)
+    print(item2)
+    print("\\-----------------------/")
+    
 
 def generate_stats(health_range, power_range, money_range):
     health = random.randint(health_range[0], health_range[1])
@@ -201,6 +181,11 @@ def use_special_item(inventory: list):
 if __name__ == "__main__":
     print_welcome("Katelynn")
     print_welcome("Aubrey", 30)
+
+    print_shop_menu("Apple", .45, "Milk", .777)
+    print_shop_menu("Chicken Leg", 7.22 , "Stew", 6.88)
+
+
 
     print_shop_menu("Sword", 10.99, "Potion", 2.49)
 
