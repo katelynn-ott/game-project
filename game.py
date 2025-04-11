@@ -1,97 +1,104 @@
-# game.py
+#game.py
+import pygame
 import gamefunctions
 import random
 import json
 
-inventory = []
+
+game_state = {}
+
+GRID_SIZE = 10
+SQUARE_SIZE = 32
+TOWN_SQUARE = (0, 0)  
+MONSTER_SQUARE = (5, 5)  
+
+
+def run_map(player_x, player_y, player_hp, player_gold, monster_position):
+    pygame.init()
+    screen = pygame.display.set_mode((GRID_SIZE * SQUARE_SIZE, GRID_SIZE * SQUARE_SIZE))
+    pygame.display.set_caption("Adventure Game Map")
+
+    
+    WHITE = (255, 255, 255)
+    GREEN = (0, 255, 0)
+    RED = (255, 0, 0)
+    BLUE = (0, 0, 255)
+
+    running = True
+    while running:
+        screen.fill(WHITE)
+
+        
+        for y in range(GRID_SIZE):
+            for x in range(GRID_SIZE):
+                pygame.draw.rect(screen, (200, 200, 200), pygame.Rect(x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE), 1)
+
+        
+        pygame.draw.circle(screen, GREEN, (TOWN_SQUARE[0] * SQUARE_SIZE + SQUARE_SIZE // 2, TOWN_SQUARE[1] * SQUARE_SIZE + SQUARE_SIZE // 2), 12)
+
+       
+        pygame.draw.circle(screen, RED, (monster_position[0] * SQUARE_SIZE + SQUARE_SIZE // 2, monster_position[1] * SQUARE_SIZE + SQUARE_SIZE // 2), 12)
+
+        
+        pygame.draw.rect(screen, BLUE, pygame.Rect(player_x * SQUARE_SIZE, player_y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                return player_hp, player_gold, "game_over", monster_position
+            
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and player_y > 0:
+                    player_y -= 1
+                elif event.key == pygame.K_DOWN and player_y < GRID_SIZE - 1:
+                    player_y += 1
+                elif event.key == pygame.K_LEFT and player_x > 0:
+                    player_x -= 1
+                elif event.key == pygame.K_RIGHT and player_x < GRID_SIZE - 1:
+                    player_x += 1
+
+                
+                if (player_x, player_y) == TOWN_SQUARE:
+                    print("You have returned to the town!")
+                    pygame.quit()
+                    return player_hp, player_gold, "town", monster_position
+
+               
+                elif (player_x, player_y) == monster_position:
+                    print("A monster appears!")
+                    player_hp, player_gold = fight_monster(player_hp, player_gold)
+                    if player_hp <= 0:
+                        pygame.quit()
+                        return player_hp, player_gold, "game_over", monster_position
+                    else:
+                        print("You defeated the monster!")
+                        
+                        monster_position = (random.randint(1, GRID_SIZE - 1), random.randint(1, GRID_SIZE - 1))
+
+        pygame.display.update()
+    
+    pygame.quit()
+    return player_hp, player_gold, "town", monster_position
+
 
 def save_game(state, filename="savegame.json"):
-    """ saves current game """
-    required_keys = ["Name", "Inventory", "HP", "Gold"]
-
-    for key in required_keys:
-        if key not in state:
-            print(f"Warning: Missing key '{key}' in game state. Save may be incomplete.")
-    
     with open(filename, "w") as f:
         json.dump(state, f, indent=4)
     print("Game saved successfully.")
 
 def load_game(filename="savegame.json"):
-    """Loads the game state from a file."""
     try:
         with open(filename, "r") as f:
             state = json.load(f)
-            
-        if not all(key in state for key in ["Name", "Inventory", "HP", "Gold"]):
-            print("\nSave file is corrupted or missing data. Try starting a new game instead.\n")
-            return None
-        
-        print("Game loaded successfully.")
         return state
-    
     except FileNotFoundError:
         print("No save file found. Starting a new game.")
         return None
-    
-def fight_monster(player_hp, player_gold):
-    
-    """
-    Handles the combat sequence when the player chooses to fight a monster.
 
-    Parameters:
-        player_hp (int): The player's current health points.
-        player_gold (int): The player's current amount of gold.
 
-    Returns:
-        tuple: Updated player health and gold after the fight.
-
-    The player encounters a random monster and can either:
-    - Attack, exchanging damage with the monster.
-    - Run away, returning to town with the same stats.
-    If the player defeats the monster, they earn gold.
-    If the player runs out of HP, the game ends.
-    """
-    
-    monster = gamefunctions.create_random_monster()
-    print(f"A wild {monster['name']} appears!")
-    print(f"{monster['description']}")
-    
-    monster_hp = monster['health']
-    
-    while player_hp > 0 and monster_hp > 0:
-        print(f"\nYour HP: {player_hp} | {monster['name']} HP: {monster_hp}")
-        print("1) Attack")
-        print("2) Run Away")
-
-        action = input("Choose an action: ")
-        while action not in ["1", "2"]:
-            print("Invalid choice. Please choose 1 or 2.")
-            action = input("Choose an action: ")
-
-        if action == "1":
-            damage = random.randint(5, 15)  
-            monster_damage = random.randint(5, 10)  
-            monster_hp -= damage
-            player_hp -= monster_damage
-            print(f"You deal {damage} damage!")
-            print(f"The {monster['name']} hits you for {monster_damage}!")
-            
-            if monster_hp <= 0:
-                print(f"You defeated the {monster['name']}!")
-                player_gold += monster['money']
-                print(f"You loot {monster['money']} gold!")
-                return player_hp, player_gold
-        elif action == "2":
-            print("You flee back to town!")
-            return player_hp, player_gold
-    if player_hp <= 0:
-        print("You have been slain in battle!")
-        print("Game Over")
-        exit ()
-    
-    return player_hp, player_gold
-
+inventory = []
 
 def main():
     print("Hello and welcome to a new adventure!")
@@ -105,7 +112,6 @@ def main():
             player_name = input("\nWhat is your name? ")
             gamefunctions.print_welcome(player_name)
         
-
             while True:
                 print(f"Please choose your playstyle, {player_name}:")
                 print("1) Knight")
@@ -161,6 +167,9 @@ def main():
         else:
             print("Invalid choice. Please enter 1 or 2.")
         
+    player_x, player_y = TOWN_SQUARE 
+    monster_position = (random.randint(1, GRID_SIZE - 1), random.randint(1, GRID_SIZE - 1))  # Random initial monster position
+
     while True:
         print("\nYou are in town.")
         print(f"Current HP: {player_hp}, Current Gold: {player_gold}")
@@ -178,7 +187,13 @@ def main():
             print("Invalid input. Please choose 1, 2, 3, 4, or 5.")
 
         if action == "1":
-            player_hp, player_gold = fight_monster(player_hp, player_gold)
+            player_hp, player_gold, result, monster_position = run_map(player_x, player_y, player_hp, player_gold, monster_position)
+            if result == "town":
+                continue
+            elif result == "game_over":
+                print("Game over.")
+                exit()
+
         elif action == "2":
             if player_gold >= 5:
                 player_hp = 150  
@@ -186,6 +201,7 @@ def main():
                 print("You feel refreshed after a good rest!")
             else:
                 print("Not enough gold to sleep!")
+        
         elif action == "3":
             print("\nWelcome to the Tavern! Here is what's available:")
             gamefunctions.print_shop_menu("Apple", 0.45, "Milk", 0.777)
@@ -214,8 +230,6 @@ def main():
             else:
                 print("Not enough gold or invalid item.")
 
-
-        
         elif action == "4":
             print("\nWelcome to the shop! Here are the available items:")
             for item, details in gamefunctions.shop_items.items():
@@ -229,7 +243,6 @@ def main():
                 player_gold, message = gamefunctions.buy_item(item_name, player_gold, inventory)
                 print(message)
       
-
         elif action == "5":
             game_state["Inventory"] = player_inventory
             game_state["HP"] = player_hp
@@ -242,3 +255,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
