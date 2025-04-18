@@ -1,70 +1,13 @@
 #Gamefunctions.py
 #Katelynn Ottmann
 #2/18/25
-
-#This program defines purchase item and has three predetermined inputs to test.
-#This program also runs a randomized monster generator.
-#Documentation and Strings added to the top 
-
 import random
 
-"""
-This module contains basic game functions for managing player interactions within the game.
-It includes functions for:
-- Printing a welcome message
-- Displaying a shop menu with prices and items
-- Handling purchases
-- Generating a random monster with attributes
-
-These functions can be imported into other game modules for use.
-
-Usage Example:
-    import gamefunctions
-
-    gamefunctions.print_welcome("PlayerName")
-    gamefunctions.print_shop_menu("Sword", 5.99, "Potion", 2.46)
-"""
-
-
 def print_welcome(name: str, width: int = 20):
-    """
-    Prints a welcome message with the given name always centered to a specific length.
-
-    Parameters:
-     name(str): the players name to be displayed with welcome message
-        width: the width at which the message with be displayed and centered within.
-        
-    Returns:
-    None
-    
-    Example:
-        print_welcome ("Alice")
-        '    Hello, Alice!    '
-    """
     message = f"Hello, {name}!"
     print(message.center(width))
 
-
-    
-
 def purchase_item(item_price: float, starting_money: float, quantity_purchase):
-    """
-
-    Simulates the purchae of an item based on price, available quanity, money, and desired quantity.
-    Reduces the number of items following purchase.
-
-    Parameters:
-        item_price (float): Price per item
-        starting_money (float): The amount of money player has
-        quantity_purchase (int): the number of items player wishes to buy
-
-    Returns:
-        tuple: the number of purchased items and remaining money
-
-    Example:
-        purchase_item(3.5, 10, 3)
-        (3, 0.5)
-    """
     total_cost = item_price * quantity_purchase
     if starting_money >= total_cost:
         num_purchased = quantity_purchase
@@ -74,11 +17,8 @@ def purchase_item(item_price: float, starting_money: float, quantity_purchase):
         leftover_money = starting_money - (num_purchased * item_price)
     return num_purchased, leftover_money  
 
-
-
 def get_random_monster():
     monster_type = random.randint(1, 3)
-
     if monster_type == 1:
         name = "Hydra"
         description = "A five headed serpent that breathes fire out of the middle mouth"
@@ -100,26 +40,22 @@ def get_random_monster():
     return name, description, health_range, power_range, money_range
 
 def print_shop_menu(item1Name: str, item1Price: float, item2Name: str, item2Price: float):
-    
     item1 = f"| {item1Name:<12} ${item1Price:>7.2f} |"
     item2 = f"| {item2Name:<12} ${item2Price:>7.2f} |"
-    print("/-----------------------\\")  
+    print("/-----------------------\")  
     print(item1)
     print(item2)
-    print("\\-----------------------/")
-    
+    print("\-----------------------/")
 
 def generate_stats(health_range, power_range, money_range):
     health = random.randint(health_range[0], health_range[1])
     power = random.randint(power_range[0], power_range[1])
     money = random.randint(money_range[0], money_range[1])
-    
     return health, power, money
-    
+
 def create_random_monster():
     name, description, health_range, power_range, money_range = get_random_monster()
     health, power, money = generate_stats(health_range, power_range, money_range)
-    
     return {
         "name": name,
         "description": description,
@@ -128,26 +64,15 @@ def create_random_monster():
         "money": money
     }
 
-
 def add_item(item: str, inventory: list):
-    """
-    adds an item
-    """
     inventory.append(item)
     
 def remove_item(item: str, inventory: list):
-    """
-    removes an item
-    """
     if item in inventory:
         inventory.remove(item)
-        
-def display_inventory(inventory:list):
-    """
-    Displays the player's inventory.
-    """
-    print(f"Inventory: {', '.join(inventory) if inventory else 'Empty'}")
 
+def display_inventory(inventory:list):
+    print(f"Inventory: {', '.join(inventory) if inventory else 'Empty'}")
 
 shop_items = {
     "Sword": {"price": 75, "type": "weapon", "power": 67},
@@ -176,56 +101,3 @@ def use_special_item(inventory: list):
         inventory.remove("Mystical Amulet")
         return True, "The mystical amulet glows and defeats the monster instantly!"
     return False, "You don't have a special item!"
-
-
-if __name__ == "__main__":
-    print_welcome("Katelynn")
-    print_welcome("Aubrey", 30)
-
-    print_shop_menu("Apple", .45, "Milk", .777)
-    print_shop_menu("Chicken Leg", 7.22 , "Stew", 6.88)
-
-
-
-    print_shop_menu("Sword", 10.99, "Potion", 2.49)
-
-    num_purchased, leftover_money = purchase_item(3.5, 10, 3)
-    print(f"Purchased {num_purchased} items. Remaining money: ${leftover_money:.2f}")
-
-    random_monster = create_random_monster()
-    print(f"Monster: {random_monster['name']} - {random_monster['description']}")
-    print(f"Health: {random_monster['health']}, Power: {random_monster['power']}, Money: {random_monster['money']}")
-                     
-
-    inventory = ['bow', 'shield']
-    add_item('spear', inventory)
-    print("\nAfter adding spear:")
-    display_inventory(inventory)
-
-    remove_item('bow', inventory)
-    print("\nAfter removing bow:")
-    display_inventory(inventory)
-
-    random_monster1 = create_random_monster()
-
-    print(f"Name: {random_monster1['name']}")
-    print(f"Description: {random_monster1['description']}")
-    print(f"Health: {random_monster1['health']}")
-    print(f"Power: {random_monster1['power']}")
-    print(f"Money: {random_monster1['money']}")
-
-    random_monster2 = create_random_monster()
-
-    print(f"Name: {random_monster2['name']}")
-    print(f"Description: {random_monster2['description']}")
-    print(f"Health: {random_monster2['health']}")
-    print(f"Power: {random_monster2['power']}")
-    print(f"Money: {random_monster2['money']}")
-
-    random_monster3 = create_random_monster()
-
-    print(f"Name: {random_monster3['name']}")
-    print(f"Description: {random_monster3['description']}")
-    print(f"Health: {random_monster3['health']}")
-    print(f"Power: {random_monster3['power']}")
-    print(f"Money: {random_monster3['money']}")
