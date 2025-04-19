@@ -1,149 +1,177 @@
-#game.py
-import pygame
-import random
-from gamefunctions import (
-    print_welcome,
-    create_random_monster,
-    buy_item,
-    equip_weapon,
-    use_special_item,
-    display_inventory,
-)
+# Katelynn Ottmann
+# game.py
+# 04/18/25
 
+"""game.py
+
+Main game loop and Pygame display for the Python adventure game.
+Initializes game state, handles player input, movement, combat, shop,
+and interactions with wandering monsters on a persistent map grid.
+"""
+
+import pygame
+import sys
+import random
+from wanderingMonster import WanderingMonster
+import gamefunctions
+import json
 
 pygame.init()
-screen = pygame.display.set_mode((640, 480))
+
+CELL_SIZE = 50
+MAP_WIDTH = 10
+MAP_HEIGHT = 10
+SCREEN_WIDTH = CELL_SIZE * MAP_WIDTH
+SCREEN_HEIGHT = CELL_SIZE * MAP_HEIGHT
+WHITE = (255, 255, 255)
+PLAYER_COLOR = (0, 0, 255)
+
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Adventure Game")
+def draw_status_bar(hp, gold):
+    hp_text = font.render(f"HP: {hp}", True, (0, 0, 0))
+    gold_text = font.render(f"Gold: {gold}", True, (0, 0, 0))
+    screen.blit(hp_text, (10, 10))
+    screen.blit(gold_text, (10, 40))
 
-font = pygame.font.SysFont(None, 24)
+font = pygame.font.SysFont(None, 36)
 
+player_name = input("What is your name? ")
+gamefunctions.print_welcome(player_name, SCREEN_WIDTH // 10)
 
-player_x = 5
-player_y = 5
-tile_size = 32
-player_hp = 100
-player_gold = 150
-inventory = []
-monster_position = (random.randint(0, 19), random.randint(0, 14))
-game_running = True
+loaded = gamefunctions.load_game()
+if loaded:
+    player_pos = tuple(loaded["player_pos"])
+    player_hp = loaded["player_hp"]
+    player_gold = loaded["player_gold"]
+    monsters = [WanderingMonster.from_dict(m) for m in loaded["monsters"]]
+else:
+    player_pos = (5, 5)
+    player_hp = 30
+    player_gold = 20
+    monsters = gamefunctions.generate_monsters()
 
-
-def draw_text(text, x, y):
-    img = font.render(text, True, (255, 255, 255))
-    screen.blit(img, (x, y))
-
-
-def draw_map(player_x, player_y, monster_pos):
-    screen.fill((0, 0, 0))
-    for y in range(15):
-        for x in range(20):
-            rect = pygame.Rect(x * tile_size, y * tile_size, tile_size, tile_size)
-            color = (50, 50, 50)
-            if (x, y) == (player_x, player_y):
-                color = (0, 255, 0)
-            elif (x, y) == monster_pos:
-                color = (255, 0, 0)
-            pygame.draw.rect(screen, color, rect, 0)
-            pygame.draw.rect(screen, (100, 100, 100), rect, 1)
-
-
-def fight_monster(player_hp, player_gold, inventory):
-    print("\nA monster appears!")
-    monster = create_random_monster()
-    print(f"Name: {monster['name']}")
-    print(f"Description: {monster['description']}")
-    print(f"Health: {monster['health']}")
-    print(f"Power: {monster['power']}")
-
-    used_item, msg = use_special_item(inventory)
-    print(msg)
-    if used_item:
-        print("You defeated the monster instantly!")
-        player_gold += monster["money"]
-        return player_hp, player_gold
-
-    weapon, weapon_msg = equip_weapon(inventory)
-    print(weapon_msg)
-    if weapon:
-        player_attack = random.randint(50, 100)
-    else:
-        player_attack = random.randint(10, 40)
-
-    monster_attack = monster["power"]
-    print(f"You attack with {player_attack} power.")
-    print(f"The monster attacks with {monster_attack} power.")
-
-    if player_attack >= monster["health"]:
-        print("You defeated the monster!")
-        player_gold += monster["money"]
-    else:
-        damage = monster_attack
-        print(f"The monster hit you for {damage} damage!")
-        player_hp -= damage
-        if player_hp <= 0:
-            print("You have died.")
-    return player_hp, player_gold
-
-
-def run_map(player_x, player_y, player_hp, player_gold, monster_position):
+def game_loop():
+    global player_pos, player_hp, player_gold, monsters
+    turn_counter = 0
     clock = pygame.time.Clock()
     running = True
+
     while running:
-        draw_map(player_x, player_y, monster_position)
-        draw_text(f"HP: {player_hp}", 10, 10)
-        draw_text(f"Gold: {player_gold}", 10, 30)
+
+        pygame.event.pump()
+
+        draw_status_bar(player_hp, player_gold)
+
+        screen.fill(WHITE)
+
+        for x in range(MAP_WIDTH):
+            for y in range(MAP_HEIGHT):
+                rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                pygame.draw.rect(screen, (200, 200, 200), rect, 1)
+
+        pygame.draw.rect(screen, PLAYER_COLOR,
+                         (player_pos[0] * CELL_SIZE, player_pos[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+
+        for monster in monsters:
+            pygame.draw.rect(screen, monster.color,
+                             (monster.position[0] * CELL_SIZE, monster.position[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+
         pygame.display.flip()
-        clock.tick(10)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-                return player_hp, player_gold, "quit", monster_position
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    player_y = max(0, player_y - 1)
-                elif event.key == pygame.K_DOWN:
-                    player_y = min(14, player_y + 1)
-                elif event.key == pygame.K_LEFT:
-                    player_x = max(0, player_x - 1)
-                elif event.key == pygame.K_RIGHT:
-                    player_x = min(19, player_x + 1)
-                elif event.key == pygame.K_RETURN:
-                    running = False
-                    return player_hp, player_gold, "town", monster_position
+                gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
+                pygame.quit()
+                sys.exit()
 
-                if (player_x, player_y) == monster_position:
-                    player_hp, player_gold = fight_monster(player_hp, player_gold, inventory)
-                    monster_position = (random.randint(0, 19), random.randint(0, 14))
+        keys = pygame.key.get_pressed()
+        new_pos = list(player_pos)
+        if keys[pygame.K_LEFT]: new_pos[0] -= 1
+        elif keys[pygame.K_RIGHT]: new_pos[0] += 1
+        elif keys[pygame.K_UP]: new_pos[1] -= 1
+        elif keys[pygame.K_DOWN]: new_pos[1] += 1
+        elif keys[pygame.K_s]: player_gold = gamefunctions.shop(player_gold)
+        elif keys[pygame.K_r]: player_hp, player_gold = gamefunctions.sleep(player_hp, player_gold)
+        elif keys[pygame.K_e]: gamefunctions.equip_weapon()
+        elif keys[pygame.K_q]:
+            gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
+            pygame.quit()
+            sys.exit()
 
-    return player_hp, player_gold, "continue", monster_position
+        new_pos[0] = max(0, min(new_pos[0], MAP_WIDTH - 1))
+        new_pos[1] = max(0, min(new_pos[1], MAP_HEIGHT - 1))
+        player_pos = tuple(new_pos)
+
+        if turn_counter % 2 == 0:
+            for monster in monsters:
+                monster.move()
+
+                remaining_monsters = []
+        
+        encountered = False  
+        for monster in monsters:
+            if monster.position == player_pos and not encountered:
+                print(f"You encountered a {monster.name} with {monster.hp} HP!")
+                result = gamefunctions.fight_monster(monster)
+                if result == "win":
+                    print(f"You defeated the {monster.name} and gained {monster.gold} gold!")
+                    player_gold += monster.gold
+                   
+                elif result == "lose":
+                    print(f"The {monster.name} hit you! You lost 5 HP.")
+                    player_hp -= 5
+                    remaining_monsters.append(monster)
+                elif result == "run":
+                    print(f"You ran away from the {monster.name}.")
+                    remaining_monsters.append(monster)
+                encountered = True  
+            else:
+                remaining_monsters.append(monster)
 
 
-def town(player_gold):
-    print("\nYou've entered the town.")
-    display_inventory(inventory)
-    print("You can buy: Sword (75g), Potion (25g), Mystical Amulet (250g)")
-    choice = input("What would you like to buy? ").strip()
-    if choice:
-        player_gold, message = buy_item(choice, player_gold, inventory)
-        print(message)
-    return player_gold
 
+        monsters = remaining_monsters
 
-def main():
-    global player_x, player_y, player_hp, player_gold, monster_position
+        if not monsters:
+            print("All monsters defeated! New ones are appearing...")
+            monsters = gamefunctions.generate_monsters()
 
-    print_welcome("Kate")
-    while game_running:
-        player_hp, player_gold, result, monster_position = run_map(
-            player_x, player_y, player_hp, player_gold, monster_position
-        )
-        if result == "quit":
-            break
-        elif result == "town":
-            player_gold = town(player_gold)
+        if player_hp <= 0:
+            print("Game Over. You died.")
+            gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
+            running = False
 
+        turn_counter += 1
+        clock.tick(15)
 
-if __name__ == "__main__":
-    main()
+while True:
+    print("\n--- Town Square ---")
+    print("1. Visit the shop")
+    print("2. Rest at the inn")
+    print("3. Equip your weapon")
+    print("4. Leave town and explore")
+    print("5. Save and quit")
+    print("6. Quit without saving")
+
+    choice = input("What would you like to do? ").strip().lower()
+
+    if choice in ["1", "shop", "visit the shop"]:
+        player_gold = gamefunctions.shop(player_gold)
+    elif choice in ["2", "rest", "inn", "rest at the inn"]:
+        player_hp, player_gold = gamefunctions.sleep(player_hp, player_gold)
+    elif choice in ["3", "equip", "equip weapon", "equip your weapon"]:
+        gamefunctions.equip_weapon()
+    elif choice in ["4", "explore", "leave town", "leave town and explore"]:
+        game_loop()
+    elif choice in ["5", "save", "save and quit"]:
+        gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
+        print("Game saved. Goodbye!")
+        break
+    elif choice in ["6", "quit", "quit without saving"]:
+        print("Quitting without saving. Goodbye!")
+        break
+    else:
+        print("Invalid choice.")
+
 
