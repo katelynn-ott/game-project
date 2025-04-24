@@ -1,4 +1,3 @@
-# Katelynn Ottmann
 # game.py
 # 04/18/25
 
@@ -8,11 +7,13 @@ Main game loop and Pygame display for the Python adventure game.
 Initializes game state, handles player input, movement, combat, shop,
 and interactions with wandering monsters on a persistent map grid.
 """
+
 import pygame
 import sys
 import random
 from wanderingMonster import WanderingMonster
 import gamefunctions
+from gamefunctions import equipped_weapon
 import json
 
 pygame.init()
@@ -27,34 +28,16 @@ PLAYER_COLOR = (0, 0, 255)
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Adventure Game")
-font = pygame.font.SysFont(None, 36)
-
-# Try loading images
-try:
-    player_image = pygame.image.load("Old hero.png")
-    player_image = pygame.transform.scale(player_image, (160, 160))
-except:
-    player_image = None
-
-monster_images = {}
-monster_image_files = {
-    "Sprite": "mon1_sprite.png",
-    "Slime": "glooRotated.png",
-    "Ghost": "flameball-32x32.png"
-}
-for name, file in monster_image_files.items():
-    try:
-        img = pygame.image.load(file)
-        monster_images[name] = pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE))
-    except:
-        monster_images[name] = None
-
 def draw_status_bar(hp, gold):
     hp_text = font.render(f"HP: {hp}", True, (0, 0, 0))
     gold_text = font.render(f"Gold: {gold}", True, (0, 0, 0))
+    weapon_text = font.render(f"Weapon: {equipped_weapon if equipped_weapon else 'None'}", True, (0, 0, 0))
     screen.blit(hp_text, (10, 10))
     screen.blit(gold_text, (10, 40))
+    screen.blit(weapon_text, (10, 70))
 
+
+font = pygame.font.SysFont(None, 36)
 
 player_name = input("What is your name? ")
 gamefunctions.print_welcome(player_name, SCREEN_WIDTH // 10)
@@ -78,29 +61,24 @@ def game_loop():
     running = True
 
     while running:
-        screen.fill(WHITE)
+
+        pygame.event.pump()
+
         draw_status_bar(player_hp, player_gold)
+
+        screen.fill(WHITE)
 
         for x in range(MAP_WIDTH):
             for y in range(MAP_HEIGHT):
                 rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(screen, (200, 200, 200), rect, 1)
 
-        # Draw player
-        if player_image:
-            screen.blit(player_image, (player_pos[0] * CELL_SIZE, player_pos[1] * CELL_SIZE))
-        else:
-            pygame.draw.rect(screen, PLAYER_COLOR,
-                             (player_pos[0] * CELL_SIZE, player_pos[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        pygame.draw.rect(screen, PLAYER_COLOR,
+                         (player_pos[0] * CELL_SIZE, player_pos[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-        # Draw monsters
         for monster in monsters:
-            if monster_images.get(monster.name):
-                screen.blit(monster_images[monster.name],
-                            (monster.position[0] * CELL_SIZE, monster.position[1] * CELL_SIZE))
-            else:
-                pygame.draw.rect(screen, monster.color,
-                                 (monster.position[0] * CELL_SIZE, monster.position[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+            pygame.draw.rect(screen, monster.color,
+                             (monster.position[0] * CELL_SIZE, monster.position[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
         pygame.display.flip()
 
@@ -127,40 +105,34 @@ def game_loop():
         new_pos[0] = max(0, min(new_pos[0], MAP_WIDTH - 1))
         new_pos[1] = max(0, min(new_pos[1], MAP_HEIGHT - 1))
         player_pos = tuple(new_pos)
-
+        
         if turn_counter % 2 == 0:
             for monster in monsters:
                 monster.move()
 
-        remaining_monsters = []
-        encountered = False
+                remaining_monsters = []
+        
+        encountered = False  
         for monster in monsters:
             if monster.position == player_pos and not encountered:
                 print(f"You encountered a {monster.name} with {monster.hp} HP!")
-                while True:
-                    action = input("Do you want to (f)ight, (r)un, or (t)own? ").strip().lower()
-                    if action == 'f':
-                        result = gamefunctions.fight_monster(monster)
-                        if result == "win":
-                            print(f"You defeated the {monster.name} and gained {monster.gold} gold!")
-                            player_gold += monster.gold
-                        elif result == "lose":
-                            print(f"The {monster.name} hit you! You lost 5 HP.")
-                            player_hp -= 5
-                            remaining_monsters.append(monster)
-                        break
-                    elif action == 'r':
-                        print(f"You ran away from the {monster.name}.")
-                        remaining_monsters.append(monster)
-                        break
-                    elif action == 't':
-                        print("Returning to town...")
-                        return  # Exit the game_loop to return to the main menu
-                    else:
-                        print("Invalid choice. Please enter 'f', 'r', or 't'.")
-                encountered = True
+                result = gamefunctions.fight_monster(monster)
+                if result == "win":
+                    print(f"You defeated the {monster.name} and gained {monster.gold} gold!")
+                    player_gold += monster.gold
+                   
+                elif result == "lose":
+                    print(f"The {monster.name} hit you! You lost 5 HP.")
+                    player_hp -= 5
+                    remaining_monsters.append(monster)
+                elif result == "run":
+                    print(f"You ran away from the {monster.name}.")
+                    remaining_monsters.append(monster)
+                encountered = True  
             else:
                 remaining_monsters.append(monster)
+
+
 
         monsters = remaining_monsters
 
@@ -176,8 +148,6 @@ def game_loop():
         turn_counter += 1
         clock.tick(15)
 
-
-# Town loop
 while True:
     print("\n--- Town Square ---")
     print("1. Visit the shop")
@@ -196,7 +166,7 @@ while True:
     elif choice in ["3", "equip", "equip weapon", "equip your weapon"]:
         gamefunctions.equip_weapon()
     elif choice in ["4", "explore", "leave town", "leave town and explore"]:
-        game_loop()  
+        game_loop()
     elif choice in ["5", "save", "save and quit"]:
         gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
         print("Game saved. Goodbye!")
@@ -206,3 +176,4 @@ while True:
         break
     else:
         print("Invalid choice.")
+

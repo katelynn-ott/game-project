@@ -1,4 +1,3 @@
-# Katelynn Ottmann
 # gamefunctions.py
 # 04/18/25
 
@@ -15,82 +14,20 @@ import random
 from wanderingMonster import WanderingMonster
 
 def print_welcome(name, width):
-    print("-" * (width * 2))
-    print(f"Welcome, {name}, to the Adventure Game!".center(width * 2))
-    print("-" * (width * 2))
-
-def shop(gold):
-    print("\n" + "-" * 30)
-    print(f"Welcome to the shop! (Gold: {gold})")
-    print("1. Buy sword - 10 gold")
-    print("2. Buy potion - 5 gold")
-    print("3. Exit shop")
-    print("-" * 30)
-    while True:
-        choice = input("Choose an item: ")
-        if choice == "1":
-            if gold >= 10:
-                gold -= 10
-                print("You bought a sword.")
-            else:
-                print("Not enough gold.")
-        elif choice == "2":
-            if gold >= 5:
-                gold -= 5
-                print("You bought a potion.")
-            else:
-                print("Not enough gold.")
-        elif choice == "3":
-            print("Leaving the shop.")
-            break
-        else:
-            print("Invalid choice.")
-    return gold
-
-def sleep(hp, gold):
-    print("\nYou rest at the inn.")
-    if gold >= 5:
-        gold -= 5
-        hp = 30
-        print("You feel refreshed. HP fully restored.")
-    else:
-        print("Not enough gold to rest.")
-    return hp, gold
-
-def equip_weapon():
-    print("You equipped your weapon. (Feature placeholder)")
-
-def fight_monster(monster):
-    while monster.hp > 0:
-        action = input("Do you want to [f]ight or [r]un? ").strip().lower()
-        if action == "f":
-            hit = random.randint(1, 10)
-            print(f"You hit the {monster.name} for {hit} damage!")
-            monster.hp -= hit
-            if monster.hp <= 0:
-                print(f"You have defeated the {monster.name}!")
-                return "win"
-            
-            monster_hit = random.randint(1, 10)
-            print(f"The {monster.name} attacks you for {monster_hit} damage!")
-           
-        elif action == "r":
-            print("You run away from the battle!")
-            return "run"
-        else:
-            print("Invalid input.")
-    return "win"
+    message = f"Welcome, {name}, to the Adventure Game!"
+    print("-" * width)
+    print(message.center(width))
+    print("-" * width)
 
 def save_game(player_pos, player_hp, player_gold, monsters):
-    data = {
+    save_data = {
         "player_pos": player_pos,
         "player_hp": player_hp,
         "player_gold": player_gold,
         "monsters": [m.to_dict() for m in monsters]
     }
     with open("savefile.json", "w") as f:
-        json.dump(data, f)
-    print("Game saved.")
+        json.dump(save_data, f)
 
 def load_game():
     try:
@@ -99,25 +36,150 @@ def load_game():
     except FileNotFoundError:
         return None
 
-def new_random_monster():
-    name = random.choice(["Sprite", "Slime", "Ghost"])
-    position = (random.randint(0, 9), random.randint(0, 9)) 
-    if name == "Sprite":
-        color = (255, 0, 0)
-        hp = 10
-    elif name == "Slime":
-        color = (0, 255, 0)
-        hp = 15
+equipped_weapon = None
+owned_weapons = []
+
+def shop(player_gold):
+    global owned_weapons, equipped_weapon
+
+    while True:
+        print("\n--- Shop Menu ---")
+        print(f"Current Gold: {player_gold}")
+        print("----------------------")
+        print("1. Potion       - 10g")
+        print("2. Sword        - 15g")
+        print("3. Shield       - 12g")
+        print("4. Magic Scroll - 20g")
+        print("5. Exit Shop")
+        print("----------------------")
+        choice = input("Choose an item to buy: ")
+
+        if choice == "1":
+            if player_gold >= 10:
+                player_gold -= 10
+                print("You bought a potion!")
+            else:
+                print("Not enough gold.")
+
+        elif choice == "2":
+            if player_gold >= 15:
+                player_gold -= 15
+                owned_weapons.append("Sword")
+                print("You bought a sword!")
+            else:
+                print("Not enough gold.")
+
+        elif choice == "3":
+            if player_gold >= 12:
+                player_gold -= 12
+                owned_weapons.append("Shield")
+                print("You bought a shield!")
+            else:
+                print("Not enough gold.")
+
+        elif choice == "4":
+            if player_gold >= 20:
+                player_gold -= 20
+                owned_weapons.append("Magic Scroll")
+                print("You bought a magic scroll!")
+            else:
+                print("Not enough gold.")
+
+        elif choice == "5":
+            print("Leaving shop...")
+            break
+        else:
+            print("Invalid input.")
+
+    return player_gold
+
+def sleep(player_hp, player_gold):
+    if player_gold >= 5:
+        player_gold -= 5
+        player_hp += 10
+        player_hp = min(player_hp, 30)
+        print("You slept at the inn and restored your HP.")
     else:
-        color = (255, 255, 0)
-        hp = 20
+        print("Not enough gold to sleep.")
+    return player_hp, player_gold
+
+def equip_weapon():
+    global equipped_weapon
+    if not owned_weapons:
+        print("You don't own any weapons yet. Visit the shop to buy one.")
+        return
+
+    print("\nYour owned weapons:")
+    for idx, weapon in enumerate(owned_weapons, 1):
+        print(f"{idx}. {weapon}")
+
+    choice = input("Which weapon would you like to equip? Enter the number: ").strip()
+    if choice.isdigit():
+        choice = int(choice)
+        if 1 <= choice <= len(owned_weapons):
+            equipped_weapon = owned_weapons[choice - 1]
+            print(f"{equipped_weapon} equipped!")
+            if equipped_weapon == "Sword":
+                print("The Sword increases your damage!")
+            else:
+                print(f"{equipped_weapon} has no special damage effects.")
+        else:
+            print("Invalid choice.")
+    else:
+        print("Invalid input.")
+
+
+def new_random_monster():
+    x = random.randint(0, 9)
+    y = random.randint(0, 9)
     gold = random.randint(5, 15)
-    return WanderingMonster(position, color, gold, name, hp)
-
-
+    color = random.choice([(255, 0, 0), (0, 255, 0), (255, 165, 0)])
+    return WanderingMonster((x, y), color, gold)
 
 def generate_monsters():
-    return [new_random_monster() for _ in range(2)]
+    monster_data = [
+        {"color": (255, 0, 0), "gold": 5, "name": "Sprite", "hp": 10},
+        {"color": (0, 255, 0), "gold": 10, "name": "Slime", "hp": 15},
+        {"color": (255, 165, 0), "gold": 15, "name": "Ghost", "hp": 20},
+    ]
+    monsters = []
+    for _ in range(2):
+        data = random.choice(monster_data)
+        x, y = random.randint(0, 9), random.randint(0, 9)
+        monsters.append(WanderingMonster((x, y), data["color"], data["gold"], data["name"], data["hp"]))
+    return monsters
+
+def fight_monster(monster):
+    global equipped_weapon  
+    print(f"You encountered a {monster.name} with {monster.hp} HP!")
+
+    if "Magic Scroll" in owned_weapons:
+        use_scroll = input("Use Magic Scroll to instantly defeat this monster? (y/n): ").strip().lower()
+    if use_scroll == "y":
+        print(f"The Magic Scroll glows and destroys the {monster.name}!")
+        owned_weapons.remove("Magic Scroll")
+        return "win"
+
+    while monster.hp > 0:
+        choice = input("Do you want to (1) Fight or (2) Run? ").strip()
+        if choice in ["1", "fight", "f"]:
+            if equipped_weapon == "Sword":
+                damage = random.randint(6, 10)  
+            else:
+                damage = random.randint(3, 6)
+            monster.hp -= damage
+            print(f"You hit the {monster.name} for {damage} damage! It has {max(monster.hp, 0)} HP left.")
+            if monster.hp <= 0:
+                print(f"You defeated the {monster.name}!")
+                return "win"
+            else:
+                print(f"The {monster.name} attacks you!")
+                return "lose"
+        elif choice in ["2", "run", "r"]:
+            return "run"
+        else:
+            print("Invalid choice. Please enter 1 or 2.")
+
 
 
 def test_functions():
