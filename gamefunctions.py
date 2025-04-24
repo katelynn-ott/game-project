@@ -1,6 +1,6 @@
 # gamefunctions.py
 # 04/18/25
-
+#this code includes a wandering monster but NO GRAPHICS yet but I needed a new commit so here
 """gamefunctions.py
 
 Contains utility functions for the Python adventure game:
