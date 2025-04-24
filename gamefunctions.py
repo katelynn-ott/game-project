@@ -1,6 +1,7 @@
+# Katelynn Ottmann
 # gamefunctions.py
 # 04/18/25
-#this code includes a wandering monster but NO GRAPHICS yet but I needed a new commit so here
+
 """gamefunctions.py
 
 Contains utility functions for the Python adventure game:
@@ -11,36 +12,25 @@ Contains utility functions for the Python adventure game:
 """
 import json
 import random
+import pygame
+import os
 from wanderingMonster import WanderingMonster
-
-def print_welcome(name, width):
-    message = f"Welcome, {name}, to the Adventure Game!"
-    print("-" * width)
-    print(message.center(width))
-    print("-" * width)
-
-def save_game(player_pos, player_hp, player_gold, monsters):
-    save_data = {
-        "player_pos": player_pos,
-        "player_hp": player_hp,
-        "player_gold": player_gold,
-        "monsters": [m.to_dict() for m in monsters]
-    }
-    with open("savefile.json", "w") as f:
-        json.dump(save_data, f)
-
-def load_game():
-    try:
-        with open("savefile.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return None
-
 equipped_weapon = None
 owned_weapons = []
 
+pygame.mixer.init()
+sound_folder = os.path.join("sounds")
+entering_shop_sound = pygame.mixer.Sound(os.path.join(sound_folder, "door.wav"))
+shop_sound = pygame.mixer.Sound(os.path.join(sound_folder, "coins.wav"))
+
+def print_welcome(name, width):
+    print("-" * (width * 2))
+    print(f"Welcome, {name}, to the Adventure Game!".center(width * 2))
+    print("-" * (width * 2))
+
 def shop(player_gold):
     global owned_weapons, equipped_weapon
+    entering_shop_sound.play()
 
     while True:
         print("\n--- Shop Menu ---")
@@ -57,6 +47,7 @@ def shop(player_gold):
         if choice == "1":
             if player_gold >= 10:
                 player_gold -= 10
+                shop_sound.play()
                 print("You bought a potion!")
             else:
                 print("Not enough gold.")
@@ -64,6 +55,7 @@ def shop(player_gold):
         elif choice == "2":
             if player_gold >= 15:
                 player_gold -= 15
+                shop_sound.play()
                 owned_weapons.append("Sword")
                 print("You bought a sword!")
             else:
@@ -72,6 +64,7 @@ def shop(player_gold):
         elif choice == "3":
             if player_gold >= 12:
                 player_gold -= 12
+                shop_sound.play()
                 owned_weapons.append("Shield")
                 print("You bought a shield!")
             else:
@@ -80,12 +73,14 @@ def shop(player_gold):
         elif choice == "4":
             if player_gold >= 20:
                 player_gold -= 20
+                shop_sound.play()
                 owned_weapons.append("Magic Scroll")
                 print("You bought a magic scroll!")
             else:
                 print("Not enough gold.")
 
         elif choice == "5":
+            entering_shop_sound.play()
             print("Leaving shop...")
             break
         else:
@@ -93,15 +88,15 @@ def shop(player_gold):
 
     return player_gold
 
-def sleep(player_hp, player_gold):
-    if player_gold >= 5:
-        player_gold -= 5
-        player_hp += 10
-        player_hp = min(player_hp, 30)
-        print("You slept at the inn and restored your HP.")
+def sleep(hp, gold):
+    print("\nYou rest at the inn.")
+    if gold >= 5:
+        gold -= 5
+        hp = 30
+        print("You feel refreshed. HP fully restored.")
     else:
-        print("Not enough gold to sleep.")
-    return player_hp, player_gold
+        print("Not enough gold to rest.")
+    return hp, gold
 
 def equip_weapon():
     global equipped_weapon
@@ -127,27 +122,6 @@ def equip_weapon():
             print("Invalid choice.")
     else:
         print("Invalid input.")
-
-
-def new_random_monster():
-    x = random.randint(0, 9)
-    y = random.randint(0, 9)
-    gold = random.randint(5, 15)
-    color = random.choice([(255, 0, 0), (0, 255, 0), (255, 165, 0)])
-    return WanderingMonster((x, y), color, gold)
-
-def generate_monsters():
-    monster_data = [
-        {"color": (255, 0, 0), "gold": 5, "name": "Sprite", "hp": 10},
-        {"color": (0, 255, 0), "gold": 10, "name": "Slime", "hp": 15},
-        {"color": (255, 165, 0), "gold": 15, "name": "Ghost", "hp": 20},
-    ]
-    monsters = []
-    for _ in range(2):
-        data = random.choice(monster_data)
-        x, y = random.randint(0, 9), random.randint(0, 9)
-        monsters.append(WanderingMonster((x, y), data["color"], data["gold"], data["name"], data["hp"]))
-    return monsters
 
 def fight_monster(monster):
     global equipped_weapon  
@@ -179,6 +153,48 @@ def fight_monster(monster):
             return "run"
         else:
             print("Invalid choice. Please enter 1 or 2.")
+            
+def save_game(player_pos, player_hp, player_gold, monsters):
+    data = {
+        "player_pos": player_pos,
+        "player_hp": player_hp,
+        "player_gold": player_gold,
+        "monsters": [m.to_dict() for m in monsters]
+    }
+    with open("savefile.json", "w") as f:
+        json.dump(data, f)
+    print("Game saved.")
+
+def load_game():
+    try:
+        with open("savefile.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+def new_random_monster():
+    name = random.choice(["Sprite", "Slime", "Ghost"])
+    position = (random.randint(0, 9), random.randint(0, 9)) 
+    if name == "Sprite":
+        color = (255, 0, 0)
+        hp = 10
+    elif name == "Slime":
+        color = (0, 255, 0)
+        hp = 15
+    elif name == "Ghost":
+        color = (255, 255, 0)
+        hp = 20
+    gold = random.randint(5, 15)
+    return WanderingMonster(position, color, gold, name, hp)
+
+
+
+def generate_monsters():
+    monsters = [new_random_monster() for _ in range(2)]
+    for m in monsters:
+        print("spawned:", m.name)
+    return monsters
+
 
 def test_functions():
 
@@ -199,6 +215,3 @@ def test_functions():
         m = new_random_monster()
         print(m)
 
-
-if __name__ == "__main__":
-    test_functions()
