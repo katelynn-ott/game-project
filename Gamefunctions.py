@@ -152,13 +152,13 @@ def generate_monsters():
 def fight_monster(monster):
     global equipped_weapon  
     print(f"You encountered a {monster.name} with {monster.hp} HP!")
-
-    if "Magic Scroll" in owned_weapons:
+    
+    if "Magic Scroll" in owned_weapons:  
         use_scroll = input("Use Magic Scroll to instantly defeat this monster? (y/n): ").strip().lower()
-    if use_scroll == "y":
-        print(f"The Magic Scroll glows and destroys the {monster.name}!")
-        owned_weapons.remove("Magic Scroll")
-        return "win"
+        if use_scroll == "y":
+            print(f"The Magic Scroll glows and destroys the {monster.name}!")
+            owned_weapons.remove("Magic Scroll")
+            return "win"
 
     while monster.hp > 0:
         choice = input("Do you want to (1) Fight or (2) Run? ").strip()
@@ -179,8 +179,6 @@ def fight_monster(monster):
             return "run"
         else:
             print("Invalid choice. Please enter 1 or 2.")
-
-
 
 def test_functions():
 
