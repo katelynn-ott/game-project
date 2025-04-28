@@ -1,0 +1,1 @@
+{"player_pos": [3, 3], "player_hp": 30, "player_gold": 15, "monsters": [{"position": [5, 4], "color": [255, 0, 0], "gold": 14, "name": "Sprite", "hp": 10}, {"position": [6, 2], "color": [0, 255, 0], "gold": 15, "name": "Slime", "hp": 15}]}

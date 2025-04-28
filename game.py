@@ -15,10 +15,14 @@ import random
 from wanderingMonster import WanderingMonster
 import gamefunctions
 import json
+
 equipped_weapon = None
 owned_weapons = []
 pygame.init()
 pygame.mixer.init()
+def safe_input(prompt):
+    pygame.event.pump()  
+    return input(prompt)
 
 sound_folder = os.path.join("sounds")
 battle_start_sound = pygame.mixer.Sound(os.path.join(sound_folder, "encounter.wav"))
@@ -90,10 +94,13 @@ def game_loop():
     clock = pygame.time.Clock()
     running = True
 
+    move_delay = 0  
+
     while running:
         screen.fill(WHITE)
         draw_status_bar(player_hp, player_gold)
 
+        # Draw grid
         for x in range(MAP_WIDTH):
             for y in range(MAP_HEIGHT):
                 rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
@@ -117,34 +124,49 @@ def game_loop():
 
         pygame.display.flip()
 
+        new_pos = list(player_pos)
+        moved = False
+
+        # Event handling for key press
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
                 pygame.quit()
                 sys.exit()
 
-        keys = pygame.key.get_pressed()
-        new_pos = list(player_pos)
-        moved = False
+            if event.type == pygame.KEYDOWN:
+                if move_delay == 0: 
+                    if event.key == pygame.K_LEFT:
+                        new_pos[0] -= 1
+                        moved = True
+                    elif event.key == pygame.K_RIGHT:
+                        new_pos[0] += 1
+                        moved = True
+                    elif event.key == pygame.K_UP:
+                        new_pos[1] -= 1
+                        moved = True
+                    elif event.key == pygame.K_DOWN:
+                        new_pos[1] += 1
+                        moved = True
 
-        if keys[pygame.K_LEFT]: new_pos[0] -= 1; moved = True
-        elif keys[pygame.K_RIGHT]: new_pos[0] += 1; moved = True
-        elif keys[pygame.K_UP]: new_pos[1] -= 1; moved = True
-        elif keys[pygame.K_DOWN]: new_pos[1] += 1; moved = True
-
-        if moved and new_pos != list(player_pos):
+        if moved:
             step_sound.play()
+            move_delay = 5  
 
-        
+        # Update player position
+        if move_delay > 0:
+            move_delay -= 1
 
         new_pos[0] = max(0, min(new_pos[0], MAP_WIDTH - 1))
         new_pos[1] = max(0, min(new_pos[1], MAP_HEIGHT - 1))
         player_pos = tuple(new_pos)
 
-        if turn_counter % 2 == 0:
+        # Move monsters every other time the player moves
+        if moved and turn_counter % 2 == 0:
             for monster in monsters:
                 monster.move()
 
+        # Handle battle encounters
         remaining_monsters = []
         encountered = False
         for monster in monsters:
@@ -152,7 +174,7 @@ def game_loop():
                 battle_start_sound.play()
                 print(f"You encountered a {monster.name} with {monster.hp} HP!")
                 while True:
-                    action = input("Do you want to (f)ight, (r)un, or (t)own? ").strip().lower()
+                    action = safe_input("Do you want to (f)ight, (r)un, or (t)own? ").strip().lower()
                     if action == 'f':
                         result = gamefunctions.fight_monster(monster)
                         if result == "win":
@@ -171,7 +193,8 @@ def game_loop():
                         break
                     elif action == 't':
                         print("Returning to town...")
-                        return  
+                        move_delay = 0  # Reset move delay when returning to town
+                        return
                     else:
                         print("Invalid choice. Please enter 'f', 'r', or 't'.")
                 encountered = True
@@ -180,18 +203,20 @@ def game_loop():
 
         monsters = remaining_monsters
 
+        # If no monsters are left, regenerate them
         if not monsters:
             print("All monsters defeated! New ones are appearing...")
             monsters = gamefunctions.generate_monsters()
 
+        # If player HP is 0, end the game
         if player_hp <= 0:
             print("Game Over. You died.")
             gamefunctions.save_game(player_pos, player_hp, player_gold, monsters)
             running = False
 
         turn_counter += 1
-        clock.tick(15)
-
+        clock.tick(60)  
+  
 
 # Town loop
 while True:
